@@ -27,6 +27,7 @@ var (
 func main() {
 	a := app.New()
 
+	// Note: To remove this custom theme - just comment this line
 	a.Settings().SetTheme(&myTheme{})
 
 	win := a.NewWindow("Markdown")
