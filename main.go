@@ -1,10 +1,14 @@
 package main
 
 import (
+	"io/ioutil"
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -15,7 +19,10 @@ type config struct {
 	SaveMenuItem  *fyne.MenuItem
 }
 
-var cfg config
+var (
+	cfg    config
+	filter = storage.NewExtensionFileFilter([]string{".md", ".MD"})
+)
 
 func main() {
 	a := app.New()
@@ -42,7 +49,7 @@ func (app *config) makeUI() (*widget.Entry, *widget.RichText) {
 }
 
 func (app *config) createMenuItems(win fyne.Window) {
-	openMenuItem := fyne.NewMenuItem("Open...", func() {})
+	openMenuItem := fyne.NewMenuItem("Open...", app.openFunc(win))
 	saveMenuItem := fyne.NewMenuItem("Save", func() {})
 	app.SaveMenuItem = saveMenuItem
 	app.SaveMenuItem.Disabled = false
@@ -67,13 +74,51 @@ func (app *config) saveAsFunc(win fyne.Window) func() {
 				// user click on cancel
 				return
 			}
+
+			if !strings.HasSuffix(strings.ToLower(write.URI().String()), ".md") {
+				dialog.ShowInformation("Error", "Please name your file with a .md extention", win)
+				return
+			}
+
 			// save file
 			write.Write([]byte(app.EditWidget.Text))
 			app.CurrentFile = write.URI()
 			defer write.Close()
-			win.SetTitle(win.Title() + " - " + write.URI().Name())
+			win.SetTitle("Markdown - " + write.URI().Name())
 			app.SaveMenuItem.Disabled = false
 		}, win)
+		saveDialog.SetFileName("untitled.md")
+		saveDialog.SetFilter(filter)
 		saveDialog.Show()
+	}
+}
+
+func (app *config) openFunc(win fyne.Window) func() {
+	return func() {
+		openDialog := dialog.NewFileOpen(func(read fyne.URIReadCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, win)
+				return
+			}
+			if read == nil {
+				// user click on cancel
+				return
+			}
+
+			defer read.Close()
+			data, err := ioutil.ReadAll(read)
+			if err != nil {
+				dialog.ShowError(err, win)
+				return
+			}
+
+			app.EditWidget.SetText(string(data))
+			app.CurrentFile = read.URI()
+			win.SetTitle(win.Title() + " - " + read.URI().Name())
+			app.SaveMenuItem.Disabled = false
+
+		}, win)
+		openDialog.SetFilter(filter)
+		openDialog.Show()
 	}
 }
