@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -106,7 +106,7 @@ func (app *config) openFunc(win fyne.Window) func() {
 			}
 
 			defer read.Close()
-			data, err := ioutil.ReadAll(read)
+			data, err := io.ReadAll(read)
 			if err != nil {
 				dialog.ShowError(err, win)
 				return
