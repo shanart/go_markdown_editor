@@ -27,6 +27,8 @@ var (
 func main() {
 	a := app.New()
 
+	a.Settings().SetTheme(&myTheme{})
+
 	win := a.NewWindow("Markdown")
 	edit, preview := cfg.makeUI()
 	cfg.createMenuItems(win)
